@@ -84,6 +84,20 @@ def sender_loop():
 		if msg == "/q":
 			print("EXITING PROGRAM")
 			break
+		elif msg == "/users":
+			print("ONLINE USERS: " + ", ".join(peers.values()))
+			continue
+		elif msg.startswith("/dm "):
+			_, target_user, dm_msg = msg.split(" ", 2)
+			if target_user not in peers.values():
+				print(f"User {target_user} not found.")
+				continue
+			msg_data = (f"DM: {dm_msg}").encode('utf-8')
+			with peer_lock:
+				for p in peer_sockets:
+					if peers[p.getpeername()] == target_user:
+						p.sendall(msg_data)
+			continue
 
 		msg_data = (msg).encode('utf-8')
 		with peer_lock:
@@ -139,8 +153,8 @@ else:
 	print("Invalid username or password")
 	exit()
 
-threading.Thread(target=listener_thread, args=(args.port, args.username), daemon=True).start() # fun fact, args is a tuple so I have to add a comma at the end (what an awful language quirk,)
+threading.Thread(target=listener_thread, args=(args.port, args.username), daemon=True).start()
 threading.Thread(target=discovery_broadcast_thread, args=(args.port, args.username), daemon=True).start()
-threading.Thread(target=discovery_listener_thread, args=(args.username,), daemon=True).start()
+threading.Thread(target=discovery_listener_thread, args=(args.username,), daemon=True).start() # fun fact, args is a tuple so I have to add a comma at the end (what an awful language quirk,)
 
 sender_loop()
